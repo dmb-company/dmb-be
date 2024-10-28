@@ -1,0 +1,23 @@
+{
+  "name": "dmb",
+  "version": "1.0.0",
+  "description": "dmb company backend",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoshikira18/dmb-be.git"
+  },
+  "author": "hoshikira",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.7",
+    "pg": "^8.13.1"
+  }
+}
