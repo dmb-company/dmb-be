@@ -11,7 +11,7 @@ class Response {
 
   generateAccessJWT(payload = {}) {
     return jwt.sign(payload, JWT_SECRET_KEY, {
-      expiresIn: "20m",
+      expiresIn: "1h",
     });
   }
 }

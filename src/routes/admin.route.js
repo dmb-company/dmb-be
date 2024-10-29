@@ -7,7 +7,11 @@ router.post("/login", adminController.login);
 
 // [PRODUCT_TAG]
 router.get("/tags", verifyToken, adminController.getProductTags);
-router.post("/tags", verifyToken, adminController.createProductTags);
+router.post("/tags", verifyToken, adminController.createProductTag);
+
+// [PRODUCT_CATEGORY]
+router.get("/categories", verifyToken, adminController.getProductCategory);
+router.post("/categories", verifyToken, adminController.createProductCategory);
 
 // [PRODUCTS]
 router.get("/products", verifyToken, adminController.getProducts);

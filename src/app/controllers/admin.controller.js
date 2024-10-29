@@ -27,18 +27,17 @@ exports.createProduct = async (req, res) => {
   } catch (error) {}
 };
 
-/* ------------------- Product API ------------------ */
+/* ------------------- Tags API ------------------ */
 // [GET] /admin/tags
 exports.getProductTags = async (req, res) => {
   try {
-    // Join product with product_tags and product_tag to get product information and associated tags
     const result = await db.pool.query("select * from product_tag");
 
     res.status(200).json({
       tags: result.rows,
     });
   } catch (error) {
-    console.error(error); // Log the error for easier debugging
+    console.error(error);
     res.status(500).json({
       message: "Get product tags failed!",
     });
@@ -46,7 +45,7 @@ exports.getProductTags = async (req, res) => {
 };
 
 // [POST] /admin/tags
-exports.createProductTags = async (req, res) => {
+exports.createProductTag = async (req, res) => {
   const tagId = generateID("ptag");
   const { value, metadata = null } = req.body;
 
@@ -62,7 +61,7 @@ exports.createProductTags = async (req, res) => {
       [tagId, value, metadata]
     );
     res.status(200).json({
-      message: "Create product tags success!",
+      message: "Create product tag success!",
       data: {
         id: tagId,
         value: value,
@@ -70,9 +69,60 @@ exports.createProductTags = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error); // Log the error for easier debugging
+    console.error(error);
     res.status(500).json({
-      message: "Create product tags failed!",
+      message: "Create product tag failed!",
+    });
+  }
+};
+
+/* ------------------- Category API ------------------ */
+// [GET] /admin/categories
+exports.getProductCategory = async (req, res) => {
+  try {
+    const result = await db.pool.query("select * from product_category");
+
+    res.status(200).json({
+      categories: result.rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Get product categories failed!",
+    });
+  }
+};
+
+// [POST] /admin/categories
+exports.createProductCategory = async (req, res) => {
+  const categoryId = generateID("pcat");
+  const { name, handle, description, metadata = null } = req.body;
+
+  if (!name) {
+    return res.status(400).json({
+      message: "Invalid product category data!",
+    });
+  }
+
+  try {
+    await db.pool.query(
+      `INSERT INTO public.product_category(id, name, handle, description, metadata) VALUES ($1, $2, $3, $4, $5);`,
+      [categoryId, name, handle, description, metadata]
+    );
+    res.status(200).json({
+      message: "Create product category success!",
+      data: {
+        id: categoryId,
+        name: name,
+        handle: handle,
+        description: description,
+        metadata: metadata,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Create product tag failed!",
     });
   }
 };
