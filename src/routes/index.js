@@ -5,7 +5,11 @@ const db = require("../config/db.config");
 function route(app) {
   app.use("/admin", adminRoutes);
   app.use("/store", storeRoutes);
-  app.get("/test", (req, res) => {});
+  app.get("/test", (req, res) => {
+    res.json({
+      message: "Test route.",
+    });
+  });
 }
 
 module.exports = route;
