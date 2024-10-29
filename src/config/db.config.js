@@ -1,5 +1,6 @@
 const Pool = require("pg").Pool;
-export const pool = new Pool({
+
+const pool = new Pool({
   user: "postgres",
   host: "localhost",
   database: "dmb",
@@ -7,4 +8,6 @@ export const pool = new Pool({
   port: 5432,
 });
 
-const Response = require("./models/response");
+module.exports = {
+  pool,
+};
