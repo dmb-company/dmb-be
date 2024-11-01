@@ -8,12 +8,6 @@ class Response {
     this.message = message;
     this.data = data;
   }
-
-  generateAccessJWT(payload = {}) {
-    return jwt.sign(payload, JWT_SECRET_KEY, {
-      expiresIn: "1h",
-    });
-  }
 }
 
 module.exports = Response;

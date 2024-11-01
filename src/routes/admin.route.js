@@ -1,9 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../app/middleware/auth");
+const authController = require("../app/controllers/auth.controller");
 const adminController = require("../app/controllers/admin.controller");
 
-router.post("/login", adminController.login);
+// [AUTH]
+router.post("/login", authController.login);
+router.post("/refreshToken", authController.refreshToken);
 
 // [PRODUCT_TAG]
 router.get("/tags", verifyToken, adminController.getProductTags);
