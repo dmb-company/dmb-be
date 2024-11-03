@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const verifyToken = require("../app/middleware/auth");
 const authController = require("../app/controllers/auth.controller");
-const adminController = require("../app/controllers/admin.controller");
 const productController = require("../app/controllers/products.controller");
 const productTagsController = require("../app/controllers/product-tags.controller");
 const productCategoriesController = require("../app/controllers/product-categories.controller");

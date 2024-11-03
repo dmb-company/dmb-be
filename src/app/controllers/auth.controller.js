@@ -7,6 +7,15 @@ const tokenTTL = "5m";
 const refreshTokenTTL = "60m";
 const refreshTokens = {};
 
+// [GET] /auth/session
+exports.getSession = async (req, res) => {
+  const payload = {
+    user: "admin",
+  };
+
+  res.status(200).json(payload);
+};
+
 // [POST] /admin/login
 exports.login = async (req, res) => {
   const { email, password } = req?.body;
