@@ -30,5 +30,7 @@ router.post(
 // [PRODUCTS]
 router.get("/products", verifyToken, productController.getProducts);
 router.post("/products", verifyToken, productController.createProduct);
+router.delete("/products", verifyToken, productController.deleteProduct);
+router.patch("/products", verifyToken, productController.updateProductFields);
 
 module.exports = router;
