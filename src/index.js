@@ -1,4 +1,5 @@
 const cors = require("cors");
+var morgan = require("morgan");
 const route = require("./routes");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -11,6 +12,9 @@ var corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// setup the logger
+app.use(morgan("combined"));
 
 app.use(bodyParser.json());
 app.use(

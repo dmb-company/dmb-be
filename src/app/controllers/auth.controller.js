@@ -3,7 +3,8 @@ const db = require("../../config/db.config");
 const Response = require("../../models/response");
 const { JWT_SECRET_KEY, JWT_REFRESH_KEY } = require("../../config/auth.config");
 
-const tokenTTL = "5s";
+const tokenTTL = "5m";
+const refreshTokenTTL = "60m";
 const refreshTokens = {};
 
 // [POST] /admin/login
@@ -37,7 +38,7 @@ exports.login = async (req, res) => {
       expiresIn: tokenTTL,
     });
     const refreshToken = jwt.sign(payload, JWT_REFRESH_KEY, {
-      expiresIn: "20s",
+      expiresIn: refreshTokenTTL,
     });
 
     refreshTokens[refreshToken] = {
