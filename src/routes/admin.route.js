@@ -26,6 +26,16 @@ router.post(
   verifyToken,
   productCategoriesController.createProductCategory
 );
+router.delete(
+  "/categories",
+  verifyToken,
+  productCategoriesController.deleteProductCategory
+);
+router.patch(
+  "/categories",
+  verifyToken,
+  productCategoriesController.updateProductCategory
+);
 
 // [PRODUCTS]
 router.get("/products", verifyToken, productController.getProducts);

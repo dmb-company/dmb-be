@@ -51,3 +51,87 @@ exports.createProductCategory = async (req, res) => {
     });
   }
 };
+
+// [DELETE] /admin/categories
+exports.deleteProductCategory = async (req, res) => {
+  const { categoryId } = req.body;
+
+  if (!categoryId) {
+    return res.status(400).json({
+      message: "Category ID is required!",
+    });
+  }
+
+  try {
+    // Delete the category
+    await db.pool.query(`DELETE FROM public.product_category WHERE id = $1;`, [
+      categoryId,
+    ]);
+
+    res.status(200).json({
+      message: "Delete product category success!",
+      data: {
+        id: categoryId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Delete product category failed!",
+    });
+  }
+};
+
+// [PATCH] /admin/categories
+exports.updateProductCategory = async (req, res) => {
+  const { categoryId, ...updateFields } = req.body;
+
+  if (!categoryId) {
+    return res.status(400).json({
+      message: "Category ID is required!",
+    });
+  }
+
+  if (Object.keys(updateFields).length === 0) {
+    return res.status(400).json({
+      message: "No fields provided to update!",
+    });
+  }
+
+  try {
+    const setClauses = [];
+    const values = [];
+    let index = 1;
+
+    // Dynamically build the SET clause for each field in the request
+    for (const [key, value] of Object.entries(updateFields)) {
+      setClauses.push(`${key} = $${index}`);
+      values.push(value);
+      index++;
+    }
+
+    // Add the category ID as the last parameter
+    values.push(categoryId);
+
+    // Update only the specified fields
+    await db.pool.query(
+      `UPDATE public.product_category SET ${setClauses.join(
+        ", "
+      )} WHERE id = $${index}`,
+      values
+    );
+
+    res.status(200).json({
+      message: "Update product category success!",
+      data: {
+        id: categoryId,
+        ...updateFields,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Update product category failed!",
+    });
+  }
+};
