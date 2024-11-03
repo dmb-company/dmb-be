@@ -14,6 +14,8 @@ router.post("/refreshToken", authController.refreshToken);
 // [PRODUCT_TAG]
 router.get("/tags", verifyToken, productTagsController.getProductTags);
 router.post("/tags", verifyToken, productTagsController.createProductTag);
+router.delete("/tags", verifyToken, productTagsController.deleteProductTag);
+router.patch("/tags", verifyToken, productTagsController.updateProductTag);
 
 // [PRODUCT_CATEGORY]
 router.get(
