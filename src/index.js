@@ -3,6 +3,7 @@ var morgan = require("morgan");
 const route = require("./routes");
 const express = require("express");
 const bodyParser = require("body-parser");
+require("dotenv").config({ path: "./.env" });
 
 const app = express();
 const port = process.env.PORT || 3050;
