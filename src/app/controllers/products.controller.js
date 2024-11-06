@@ -3,21 +3,50 @@ const { generateID, convertToSlug } = require("../../lib");
 
 /* ------------------- Product API ------------------ */
 // [GET] /admin/products
-// [GET] /admin/products
 exports.getProducts = async (req, res) => {
   try {
-    // Fetch products along with their associated tags and categories
+    // Fetch products along with their associated tags and categories with full details, filtering out null values
     const productsQuery = `
       SELECT 
         p.*, 
-        ARRAY_AGG(pt.product_tag_id) AS tags,
-        ARRAY_AGG(pc.product_category_id) AS categories
+        COALESCE(
+          json_agg(
+            CASE WHEN pt.id IS NOT NULL THEN
+              jsonb_build_object(
+                'id', pt.id,
+                'value', pt.value,
+                'created_at', pt.created_at,
+                'updated_at', pt.updated_at,
+                'metadata', pt.metadata
+              )
+            END
+          ) FILTER (WHERE pt.id IS NOT NULL), '[]'
+        ) AS tags,
+        COALESCE(
+          json_agg(
+            CASE WHEN pc.id IS NOT NULL THEN
+              jsonb_build_object(
+                'id', pc.id,
+                'name', pc.name,
+                'handle', pc.handle,
+                'description', pc.description,
+                'created_at', pc.created_at,
+                'updated_at', pc.updated_at,
+                'metadata', pc.metadata
+              )
+            END
+          ) FILTER (WHERE pc.id IS NOT NULL), '[]'
+        ) AS categories
       FROM 
         public.product p
       LEFT JOIN 
-        public.product_tags pt ON p.id = pt.product_id
+        public.product_tags pt_rel ON p.id = pt_rel.product_id
       LEFT JOIN 
-        public.product_category_product pc ON p.id = pc.product_id
+        public.product_tag pt ON pt_rel.product_tag_id = pt.id
+      LEFT JOIN 
+        public.product_category_product pc_rel ON p.id = pc_rel.product_id
+      LEFT JOIN 
+        public.product_category pc ON pc_rel.product_category_id = pc.id
       GROUP BY 
         p.id;
     `;
@@ -25,11 +54,7 @@ exports.getProducts = async (req, res) => {
     const products = await db.pool.query(productsQuery).then((res) => res.rows);
 
     res.status(200).json({
-      products: products.map((product) => ({
-        ...product,
-        tags: product.tags.filter((tag) => tag !== null), // Filter out null values
-        categories: product.categories.filter((category) => category !== null), // Filter out null values
-      })),
+      products: products,
     });
   } catch (error) {
     console.error(error);
