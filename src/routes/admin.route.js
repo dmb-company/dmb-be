@@ -40,6 +40,7 @@ router.patch(
 
 // [PRODUCTS]
 router.get("/products", verifyToken, productController.getProducts);
+router.get("/products/:id", verifyToken, productController.getOneProduct);
 router.post("/products", verifyToken, productController.createProduct);
 router.delete("/products", verifyToken, productController.deleteProduct);
 router.patch("/products", verifyToken, productController.updateProductFields);

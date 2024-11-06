@@ -3,18 +3,85 @@ const { generateID, convertToSlug } = require("../../lib");
 
 /* ------------------- Product API ------------------ */
 // [GET] /admin/products
+// [GET] /admin/products
 exports.getProducts = async (req, res) => {
   try {
-    // [SQL]
-    const result = await db.pool
-      .query("select * from product")
-      .then((res) => res.rows);
+    // Fetch products along with their associated tags and categories
+    const productsQuery = `
+      SELECT 
+        p.*, 
+        ARRAY_AGG(pt.product_tag_id) AS tags,
+        ARRAY_AGG(pc.product_category_id) AS categories
+      FROM 
+        public.product p
+      LEFT JOIN 
+        public.product_tags pt ON p.id = pt.product_id
+      LEFT JOIN 
+        public.product_category_product pc ON p.id = pc.product_id
+      GROUP BY 
+        p.id;
+    `;
+
+    const products = await db.pool.query(productsQuery).then((res) => res.rows);
+
     res.status(200).json({
-      products: result,
+      products: products.map((product) => ({
+        ...product,
+        tags: product.tags.filter((tag) => tag !== null), // Filter out null values
+        categories: product.categories.filter((category) => category !== null), // Filter out null values
+      })),
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       message: "Get products failed!",
+    });
+  }
+};
+
+// [GET] /admin/product/:id
+exports.getOneProduct = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Query to get the product details along with its tags and categories
+    const productQuery = `
+      SELECT 
+        p.*, 
+        ARRAY_AGG(DISTINCT pt.product_tag_id) AS tags,
+        ARRAY_AGG(DISTINCT pc.product_category_id) AS categories
+      FROM 
+        public.product p
+      LEFT JOIN 
+        public.product_tags pt ON p.id = pt.product_id
+      LEFT JOIN 
+        public.product_category_product pc ON p.id = pc.product_id
+      WHERE 
+        p.id = $1
+      GROUP BY 
+        p.id;
+    `;
+
+    const product = await db.pool
+      .query(productQuery, [id])
+      .then((res) => res.rows[0]);
+
+    // Check if the product exists
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
+
+    res.status(200).json({
+      ...product,
+      tags: product.tags.filter((tag) => tag !== null), // Remove null values
+      categories: product.categories.filter((category) => category !== null), // Remove null values
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Get product failed!",
     });
   }
 };
