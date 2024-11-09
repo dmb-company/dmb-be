@@ -4,7 +4,7 @@ const { generateID } = require("../../lib");
 // [POST] /admin/banners
 exports.createBanner = async (req, res) => {
   const { image_pc, image_mobile, product_id } = req.body;
-  const id = generateID("ban_");
+  const id = generateID("ban");
 
   try {
     const query = `

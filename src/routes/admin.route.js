@@ -2,10 +2,15 @@ const express = require("express");
 const router = express.Router();
 const verifyToken = require("../app/middleware/auth");
 const authController = require("../app/controllers/auth.controller");
+const storeController = require("../app/controllers/store.controller");
 const bannersController = require("../app/controllers/banners.controller");
+const partnersController = require("../app/controllers/partners.controller");
 const productController = require("../app/controllers/products.controller");
 const productTagsController = require("../app/controllers/product-tags.controller");
 const productCategoriesController = require("../app/controllers/product-categories.controller");
+
+// [STORE]
+router.patch("/store", verifyToken, storeController.updateStore);
 
 // [AUTH]
 router.post("/login", authController.login);
@@ -60,5 +65,10 @@ router.patch(
 router.get("/banners", verifyToken, bannersController.getBanners);
 router.post("/banners", verifyToken, bannersController.createBanner);
 router.delete("/banners/:id", verifyToken, bannersController.deleteBanner);
+
+// [PARTNERS]
+router.get("/partners", verifyToken, partnersController.getPartners);
+router.post("/partners", verifyToken, partnersController.createPartner);
+router.delete("/partners/:id", verifyToken, partnersController.deletePartner);
 
 module.exports = router;
