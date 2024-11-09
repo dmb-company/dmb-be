@@ -18,10 +18,26 @@ exports.getProductCategory = async (req, res) => {
   }
 };
 
+// [GET] /admin/categories/:id
+exports.getOneProductCategory = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.pool
+      .query(`select * from product_category where id = $1`, [id])
+      .then((res) => res.rows[0]);
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      message: "Get product category failed!",
+    });
+  }
+};
+
 // [POST] /admin/categories
 exports.createProductCategory = async (req, res) => {
   const categoryId = generateID("pcat");
-  const { name, handle, description, metadata = null } = req.body;
+  const { name, handle, description = "", metadata = null } = req.body;
 
   if (!name) {
     return res.status(400).json({

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const verifyToken = require("../app/middleware/auth");
 const authController = require("../app/controllers/auth.controller");
+const bannersController = require("../app/controllers/banners.controller");
 const productController = require("../app/controllers/products.controller");
 const productTagsController = require("../app/controllers/product-tags.controller");
 const productCategoriesController = require("../app/controllers/product-categories.controller");
@@ -22,6 +23,12 @@ router.get(
   verifyToken,
   productCategoriesController.getProductCategory
 );
+router.get(
+  "/categories/:id",
+  verifyToken,
+  productCategoriesController.getOneProductCategory
+);
+
 router.post(
   "/categories",
   verifyToken,
@@ -43,6 +50,15 @@ router.get("/products", verifyToken, productController.getProducts);
 router.get("/products/:id", verifyToken, productController.getOneProduct);
 router.post("/products", verifyToken, productController.createProduct);
 router.delete("/products", verifyToken, productController.deleteProduct);
-router.patch("/products", verifyToken, productController.updateProductFields);
+router.patch(
+  "/products/:id",
+  verifyToken,
+  productController.updateProductFields
+);
+
+// [BANNERS]
+router.get("/banners", verifyToken, bannersController.getBanners);
+router.post("/banners", verifyToken, bannersController.createBanner);
+router.delete("/banners/:id", verifyToken, bannersController.deleteBanner);
 
 module.exports = router;

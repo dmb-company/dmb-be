@@ -3,7 +3,7 @@ const db = require("../../config/db.config");
 const Response = require("../../models/response");
 const { JWT_SECRET_KEY, JWT_REFRESH_KEY } = require("../../config/auth.config");
 
-const tokenTTL = "5m";
+const tokenTTL = "60m";
 const refreshTokenTTL = "60m";
 const refreshTokens = {};
 

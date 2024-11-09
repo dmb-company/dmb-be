@@ -1,5 +1,6 @@
 const db = require("../../config/db.config");
 const { generateID, convertToSlug } = require("../../lib");
+const productTagController = require("./product-tags.controller");
 
 /* ------------------- Product API ------------------ */
 // [GET] /admin/products
@@ -65,22 +66,49 @@ exports.getProducts = async (req, res) => {
 };
 
 // [GET] /admin/product/:id
+// [GET] /admin/product/:id
 exports.getOneProduct = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Query to get the product details along with its tags and categories
+    // Query to get the product details along with unique tags and categories
     const productQuery = `
       SELECT 
         p.*, 
-        ARRAY_AGG(DISTINCT pt.product_tag_id) AS tags,
-        ARRAY_AGG(DISTINCT pc.product_category_id) AS categories
+        COALESCE(
+          json_agg(
+            DISTINCT jsonb_build_object(
+              'id', pt.id,
+              'value', pt.value,
+              'created_at', pt.created_at,
+              'updated_at', pt.updated_at,
+              'metadata', pt.metadata
+            )
+          ) FILTER (WHERE pt.id IS NOT NULL), '[]'
+        ) AS tags,
+        COALESCE(
+          json_agg(
+            DISTINCT jsonb_build_object(
+              'id', pc.id,
+              'name', pc.name,
+              'handle', pc.handle,
+              'description', pc.description,
+              'created_at', pc.created_at,
+              'updated_at', pc.updated_at,
+              'metadata', pc.metadata
+            )
+          ) FILTER (WHERE pc.id IS NOT NULL), '[]'
+        ) AS categories
       FROM 
         public.product p
       LEFT JOIN 
-        public.product_tags pt ON p.id = pt.product_id
+        public.product_tags pt_rel ON p.id = pt_rel.product_id
       LEFT JOIN 
-        public.product_category_product pc ON p.id = pc.product_id
+        public.product_tag pt ON pt_rel.product_tag_id = pt.id
+      LEFT JOIN 
+        public.product_category_product pc_rel ON p.id = pc_rel.product_id
+      LEFT JOIN 
+        public.product_category pc ON pc_rel.product_category_id = pc.id
       WHERE 
         p.id = $1
       GROUP BY 
@@ -100,8 +128,6 @@ exports.getOneProduct = async (req, res) => {
 
     res.status(200).json({
       ...product,
-      tags: product.tags.filter((tag) => tag !== null), // Remove null values
-      categories: product.categories.filter((category) => category !== null), // Remove null values
     });
   } catch (error) {
     console.error(error);
@@ -118,26 +144,42 @@ exports.createProduct = async (req, res) => {
     title,
     handle = "",
     images = {
-      data: [],
+      images: [],
     },
     subtitle = "",
     description = "",
     thumbnail = "",
     originCountry = "",
     metadata = null,
-    tagsId = {
-      data: [],
-    },
-    categoriesId = {
-      data: [],
-    },
+    tags,
+    categories,
   } = req.body;
-
-  if (handle === "") handle = convertToSlug(title);
 
   if (!title) {
     return res.status(400).json({
       message: "Invalid product data!",
+    });
+  }
+  if (handle === "") handle = convertToSlug(title);
+
+  const tagsId = [];
+
+  // handle create new product tag
+  if (tags) {
+    tags.forEach(async (tag) => {
+      // if tag dont have id -> create new tag
+      if (tag && !tag.id) {
+        await productTagController
+          .createProductTagFunction(tag.value)
+          .then((tagId) => {
+            // console.log(res);
+            if (tagId) {
+              tagsId.push(tagId);
+            }
+          });
+      } else if (tag) {
+        tagsId.push(tag.id);
+      }
     });
   }
 
@@ -159,7 +201,7 @@ exports.createProduct = async (req, res) => {
       ]
     );
 
-    const tags = tagsId?.data;
+    const tags = tagsId;
     if (tags.length > 0) {
       const tagsValues = tags
         .map((tagId, index) => `($1, $${index + 2})`)
@@ -173,12 +215,12 @@ exports.createProduct = async (req, res) => {
       );
     }
 
-    const categories = categoriesId?.data;
     if (categories.length > 0) {
+      const categoriesId = categories.map((category) => category?.id);
       const categoriesValues = categories
         .map((categoryId, index) => `($1, $${index + 2})`)
         .join(", ");
-      const categoriesParams = [proId, ...categories];
+      const categoriesParams = [proId, ...categoriesId];
 
       await db.pool.query(
         `INSERT INTO public.product_category_product(
@@ -254,7 +296,8 @@ exports.deleteProduct = async (req, res) => {
 
 // [PATCH] /admin/product
 exports.updateProductFields = async (req, res) => {
-  const { productId, ...updateFields } = req.body;
+  const { id: productId } = req.params;
+  const { tags, categories, ...updateFields } = req.body;
 
   if (!productId) {
     return res.status(400).json({
@@ -263,7 +306,7 @@ exports.updateProductFields = async (req, res) => {
   }
 
   // Check if there are fields to update
-  if (Object.keys(updateFields).length === 0) {
+  if (Object.keys(updateFields).length === 0 && !tags && !categories) {
     return res.status(400).json({
       message: "No fields provided to update!",
     });
@@ -297,16 +340,15 @@ exports.updateProductFields = async (req, res) => {
     }
 
     // Update tags if provided
-    if (updateFields.tagsId?.data) {
+    if (tags) {
       await db.pool.query(
         `DELETE FROM public.product_tags WHERE product_id = $1;`,
         [productId]
       );
-      if (updateFields.tagsId.data.length > 0) {
-        const tagsValues = updateFields.tagsId.data
-          .map((tagId, i) => `($1, $${i + 2})`)
-          .join(", ");
-        const tagsParams = [productId, ...updateFields.tagsId.data];
+      if (tags.length > 0) {
+        const tagsValues = tags.map((tag, i) => `($1, $${i + 2})`).join(", ");
+        const tagsParams = [productId, ...tags.map((tag) => tag.id)];
+        console.log(tagsParams);
         await db.pool.query(
           `INSERT INTO public.product_tags (product_id, product_tag_id) VALUES ${tagsValues}`,
           tagsParams
@@ -315,16 +357,19 @@ exports.updateProductFields = async (req, res) => {
     }
 
     // Update categories if provided
-    if (updateFields.categoriesId?.data) {
+    if (categories) {
       await db.pool.query(
         `DELETE FROM public.product_category_product WHERE product_id = $1;`,
         [productId]
       );
-      if (updateFields.categoriesId.data.length > 0) {
-        const categoriesValues = updateFields.categoriesId.data
+      if (categories.length > 0) {
+        const categoriesValues = categories
           .map((categoryId, i) => `($1, $${i + 2})`)
           .join(", ");
-        const categoriesParams = [productId, ...updateFields.categoriesId.data];
+        const categoriesParams = [
+          productId,
+          ...categories.map((category) => category.id),
+        ];
         await db.pool.query(
           `INSERT INTO public.product_category_product (product_id, product_category_id) VALUES ${categoriesValues}`,
           categoriesParams

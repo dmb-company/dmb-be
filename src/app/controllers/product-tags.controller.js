@@ -50,6 +50,42 @@ exports.createProductTag = async (req, res) => {
   }
 };
 
+//
+exports.createProductTagFunction = async (tagName) => {
+  try {
+    const res = await db.pool
+      .query(`SELECT * FROM public.product_tag where value = ($1)`, [tagName])
+      .then((res) => res.rows);
+    if (res?.length > 0) {
+      return;
+    }
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+
+  const tagId = generateID("ptag");
+
+  if (!tagName) {
+    console.error("Tag ID is required!");
+  }
+
+  try {
+    const res = await db.pool
+      .query(`INSERT INTO public.product_tag(id, value) VALUES ($1, $2);`, [
+        tagId,
+        tagName,
+      ])
+      .then((res) => {
+        console.log("Create product tag success!");
+        return res;
+      });
+    return tagId;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 // [DELETE] /admin/tags
 exports.deleteProductTag = async (req, res) => {
   const { tagId } = req.body;
