@@ -4,9 +4,11 @@ const verifyToken = require("../app/middleware/auth");
 const authController = require("../app/controllers/auth.controller");
 const storeController = require("../app/controllers/store.controller");
 const bannersController = require("../app/controllers/banners.controller");
+const articleController = require("../app/controllers/article.controller");
 const partnersController = require("../app/controllers/partners.controller");
 const productController = require("../app/controllers/products.controller");
 const productTagsController = require("../app/controllers/product-tags.controller");
+const articleCategoryController = require("../app/controllers/article-categories.controller");
 const productCategoriesController = require("../app/controllers/product-categories.controller");
 
 // [STORE]
@@ -15,6 +17,37 @@ router.patch("/store", verifyToken, storeController.updateStore);
 // [AUTH]
 router.post("/login", authController.login);
 router.post("/refreshToken", authController.refreshToken);
+
+// [ARTICLE CATEGORY]
+router.get(
+  "/article-categories",
+  verifyToken,
+  articleCategoryController.getAllArticleCategories
+);
+
+router.post(
+  "/article-categories",
+  verifyToken,
+  articleCategoryController.createArticleCategory
+);
+
+router.delete(
+  "/article-categories/:id",
+  verifyToken,
+  articleCategoryController.deleteArticleCategory
+);
+
+router.patch(
+  "/article-categories/:id",
+  verifyToken,
+  articleCategoryController.updateArticleCategory
+);
+
+router.get("/article", verifyToken, articleController.getArticles);
+router.post("/article", verifyToken, articleController.createArticle);
+router.get("/article/:id", verifyToken, articleController.getOneArticle);
+router.patch("/article/:id", verifyToken, articleController.updateArticle);
+router.delete("/article/:id", verifyToken, articleController.deleteArticle);
 
 // [PRODUCT_TAG]
 router.get("/tags", verifyToken, productTagsController.getProductTags);
