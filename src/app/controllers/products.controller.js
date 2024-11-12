@@ -215,7 +215,7 @@ exports.createProduct = async (req, res) => {
       );
     }
 
-    if (categories.length > 0) {
+    if (categories?.length > 0) {
       const categoriesId = categories.map((category) => category?.id);
       const categoriesValues = categories
         .map((categoryId, index) => `($1, $${index + 2})`)

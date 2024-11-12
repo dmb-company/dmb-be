@@ -17,10 +17,10 @@ exports.getStoreData = (req, res) => {
 // [PATCH] /admin/store/:id
 exports.updateStore = async (req, res) => {
   const id = "store_dmbroot";
-  const { name, metadata, address, hotline, links, standee } = req.body;
+  const { name, metadata } = req.body;
 
   try {
-    let metadataUpdate = "metadata";
+    let metadataUpdate = "COALESCE(metadata, '{}'::jsonb)"; // Initialize metadata if null
     const metadataValues = [];
 
     // If `metadata` is provided in the request, construct the `jsonb_set` chain
@@ -45,21 +45,13 @@ exports.updateStore = async (req, res) => {
       SET
         name = COALESCE($1, name),
         metadata = ${metadataUpdate},
-        address = COALESCE($${metadataValues.length + 2}, address),
-        hotline = COALESCE($${metadataValues.length + 3}, hotline),
-        links = COALESCE($${metadataValues.length + 4}, links),
-        standee = COALESCE($${metadataValues.length + 5}, standee),
         updated_at = NOW()
-      WHERE id = $${metadataValues.length + 6}
+      WHERE id = $${metadataValues.length + 2}
       RETURNING *`;
 
     const values = [
       name,
       ...metadataValues, // Spread serialized metadata values for dynamic placeholders
-      address,
-      hotline,
-      links,
-      standee,
       id,
     ];
 
