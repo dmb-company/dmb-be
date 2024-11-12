@@ -25,6 +25,12 @@ router.get(
   articleCategoryController.getAllArticleCategories
 );
 
+router.get(
+  "/article-categories/:id",
+  verifyToken,
+  articleCategoryController.getArticleCategoryById
+);
+
 router.post(
   "/article-categories",
   verifyToken,

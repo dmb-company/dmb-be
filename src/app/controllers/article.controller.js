@@ -39,7 +39,11 @@ exports.createArticle = async (req, res) => {
 
 exports.getArticles = async (req, res) => {
   try {
-    const query = `
+    // Extract filter and pagination parameters from the query string
+    const { title, category_id, date, limit, offset } = req.query;
+
+    // Initialize query with the main part and filtering logic
+    let query = `
       SELECT 
         a.*, 
         -- Category details for each article
@@ -58,10 +62,51 @@ exports.getArticles = async (req, res) => {
         ) AS categories
       FROM public.article a
       LEFT JOIN public.article_category ac ON a.category_id = ac.id
-      GROUP BY a.id
     `;
 
-    const result = await db.pool.query(query);
+    // Array to hold query conditions
+    const conditions = [];
+    const values = [];
+
+    // Add filters to the conditions array if parameters are provided
+    if (title) {
+      conditions.push(`a.title ILIKE $${conditions.length + 1}`);
+      values.push(`%${title}%`);
+    }
+
+    if (category_id) {
+      conditions.push(`a.category_id = $${conditions.length + 1}`);
+      values.push(category_id);
+    }
+
+    if (date) {
+      conditions.push(`a.date = $${conditions.length + 1}`);
+      values.push(date);
+    }
+
+    // If there are any conditions, add them to the WHERE clause
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(" AND ");
+    }
+
+    // Group by article ID to prevent duplication of results
+    query += ` GROUP BY a.id`;
+
+    // Add ORDER BY clause to sort by created_at in descending order
+    query += ` ORDER BY a.created_at DESC`;
+
+    // Add LIMIT and OFFSET if they are provided
+    if (limit) {
+      values.push(limit);
+      query += ` LIMIT $${values.length}`;
+    }
+
+    if (offset) {
+      values.push(offset);
+      query += ` OFFSET $${values.length}`;
+    }
+
+    const result = await db.pool.query(query, values);
 
     res.status(200).json({
       articles: result.rows,

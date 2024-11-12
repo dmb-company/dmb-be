@@ -129,27 +129,34 @@ exports.updateArticleCategory = async (req, res) => {
 };
 
 // [DELETE] /article-categories/:id - Delete an article category
-exports.deleteArticleCategory = (req, res) => {
+exports.deleteArticleCategory = async (req, res) => {
   const { id } = req.params;
 
-  db.pool.query(
-    "DELETE FROM public.article_category WHERE id = $1 RETURNING *",
-    [id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Failed to delete article category.",
-        });
-      }
-      if (result.rowCount === 0) {
-        return res.status(404).json({
-          message: "Article category not found.",
-        });
-      }
-      res.status(200).json({
-        message: "Article category deleted successfully.",
-        data: result.rows[0],
+  try {
+    // Step 1: Set category_id to NULL for all articles with this category_id
+    const updateQuery =
+      "UPDATE public.article SET category_id = NULL WHERE category_id = $1";
+    await db.pool.query(updateQuery, [id]);
+
+    // Step 2: Delete the category
+    const deleteQuery =
+      "DELETE FROM public.article_category WHERE id = $1 RETURNING *";
+    const deleteResult = await db.pool.query(deleteQuery, [id]);
+
+    if (deleteResult.rowCount === 0) {
+      return res.status(404).json({
+        message: "Article category not found.",
       });
     }
-  );
+
+    res.status(200).json({
+      message: "Article category deleted successfully.",
+      data: deleteResult.rows[0],
+    });
+  } catch (err) {
+    console.error("Error deleting article category:", err);
+    res.status(500).json({
+      message: "Failed to delete article category.",
+    });
+  }
 };
