@@ -6,36 +6,68 @@ const productTagController = require("./product-tags.controller");
 // [GET] /admin/products
 exports.getProducts = async (req, res) => {
   try {
-    // Fetch products along with their associated tags and categories with full details, filtering out null values
+    const { filter, limit = 10, offset = 0, categoryIds, tagIds } = req.query;
+
+    let filterClause = "";
+    const queryParams = [];
+
+    // Filter by product name if `filter` is provided
+    if (filter) {
+      filterClause += `WHERE p.title ILIKE $${queryParams.length + 1} `;
+      queryParams.push(`%${filter}%`);
+    }
+
+    // Filter by category IDs
+    if (categoryIds) {
+      const categoryIdsArray = categoryIds.split(",").map((id) => id.trim()); // Handle category IDs as strings
+      if (filterClause) {
+        filterClause += `AND pc.id = ANY($${queryParams.length + 1}) `;
+      } else {
+        filterClause += `WHERE pc.id = ANY($${queryParams.length + 1}) `;
+      }
+      queryParams.push(categoryIdsArray);
+    }
+
+    // Filter by tag IDs
+    if (tagIds) {
+      const tagIdsArray = tagIds.split(",").map((id) => id.trim()); // Handle tag IDs as strings
+      if (filterClause) {
+        filterClause += `AND pt.id = ANY($${queryParams.length + 1}) `;
+      } else {
+        filterClause += `WHERE pt.id = ANY($${queryParams.length + 1}) `;
+      }
+      queryParams.push(tagIdsArray);
+    }
+
+    // Add pagination parameters for limit and offset
+    queryParams.push(limit, offset);
+
+    // Update the query to include DISTINCT in json_agg for unique tags and categories
     const productsQuery = `
       SELECT 
         p.*, 
         COALESCE(
           json_agg(
-            CASE WHEN pt.id IS NOT NULL THEN
-              jsonb_build_object(
-                'id', pt.id,
-                'value', pt.value,
-                'created_at', pt.created_at,
-                'updated_at', pt.updated_at,
-                'metadata', pt.metadata
-              )
-            END
+            DISTINCT jsonb_build_object(
+              'id', pt.id,
+              'value', pt.value,
+              'created_at', pt.created_at,
+              'updated_at', pt.updated_at,
+              'metadata', pt.metadata
+            )
           ) FILTER (WHERE pt.id IS NOT NULL), '[]'
         ) AS tags,
         COALESCE(
           json_agg(
-            CASE WHEN pc.id IS NOT NULL THEN
-              jsonb_build_object(
-                'id', pc.id,
-                'name', pc.name,
-                'handle', pc.handle,
-                'description', pc.description,
-                'created_at', pc.created_at,
-                'updated_at', pc.updated_at,
-                'metadata', pc.metadata
-              )
-            END
+            DISTINCT jsonb_build_object(
+              'id', pc.id,
+              'name', pc.name,
+              'handle', pc.handle,
+              'description', pc.description,
+              'created_at', pc.created_at,
+              'updated_at', pc.updated_at,
+              'metadata', pc.metadata
+            )
           ) FILTER (WHERE pc.id IS NOT NULL), '[]'
         ) AS categories
       FROM 
@@ -48,24 +80,30 @@ exports.getProducts = async (req, res) => {
         public.product_category_product pc_rel ON p.id = pc_rel.product_id
       LEFT JOIN 
         public.product_category pc ON pc_rel.product_category_id = pc.id
+      ${filterClause}
       GROUP BY 
-        p.id;
+        p.id
+      ORDER BY 
+        p.created_at DESC
+      LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length};
     `;
 
-    const products = await db.pool.query(productsQuery).then((res) => res.rows);
+    const products = await db.pool
+      .query(productsQuery, queryParams)
+      .then((res) => res.rows);
 
     res.status(200).json({
       products: products,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching products:", error);
     res.status(500).json({
       message: "Get products failed!",
+      error: error.message || "Unknown error",
     });
   }
 };
 
-// [GET] /admin/product/:id
 // [GET] /admin/product/:id
 exports.getOneProduct = async (req, res) => {
   const { id } = req.params;
