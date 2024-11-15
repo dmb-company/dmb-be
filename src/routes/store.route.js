@@ -33,6 +33,9 @@ router.get("/tags", productTagsController.getProductTags);
 router.get("/products", productController.getProducts);
 router.get("/products/:id", productController.getOneProduct);
 
+// get best seller products
+router.get("/best-seller", productController.getBestSellerProducts);
+
 router.get("/", storeController.getStoreData);
 
 module.exports = router;

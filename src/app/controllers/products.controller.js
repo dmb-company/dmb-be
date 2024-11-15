@@ -181,6 +181,7 @@ exports.createProduct = async (req, res) => {
   let {
     title,
     handle = "",
+    isBestSeller = false,
     images = {
       images: [],
     },
@@ -224,13 +225,14 @@ exports.createProduct = async (req, res) => {
   try {
     await db.pool.query(
       `INSERT INTO public.product(
-	id, title, subtitle, description, handle, images, thumbnail, origin_country, metadata)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+	id, title, subtitle, description, isBestSeller, handle, images, thumbnail, origin_country, metadata)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
       [
         proId,
         title,
         subtitle,
         description,
+        isBestSeller,
         handle,
         images,
         thumbnail,
@@ -286,6 +288,38 @@ exports.createProduct = async (req, res) => {
     console.error(error);
     res.status(500).json({
       message: "Create product failed!",
+    });
+  }
+};
+
+// [GET] /store/best-seller
+exports.getBestSellerProducts = async (req, res) => {
+  // Extract `limit` from query parameters, defaulting to 8
+  const limit = parseInt(req.query.limit, 10) || 8;
+
+  try {
+    // Query to get best seller products ordered by creation date with a limit
+    const bestSellerQuery = `
+      SELECT * 
+      FROM public.product
+      WHERE isBestSeller = true
+      ORDER BY created_at DESC
+      LIMIT $1;
+    `;
+
+    // Execute the query with the limit parameter
+    const bestSellerProducts = await db.pool
+      .query(bestSellerQuery, [limit])
+      .then((result) => result.rows);
+
+    // Respond with the fetched products
+    res.status(200).json({
+      products: bestSellerProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching best seller products:", error); // Log the error for debugging
+    res.status(500).json({
+      message: "Failed to fetch best seller products!",
     });
   }
 };
