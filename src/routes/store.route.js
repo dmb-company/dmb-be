@@ -6,6 +6,7 @@ const articleController = require("../app/controllers/article.controller");
 const partnersController = require("../app/controllers/partners.controller");
 const productController = require("../app/controllers/products.controller");
 const productTagsController = require("../app/controllers/product-tags.controller");
+const priceRequestsController = require("../app/controllers/price-request.controller");
 const articleCategoryController = require("../app/controllers/article-categories.controller");
 const productCategoriesController = require("../app/controllers/product-categories.controller");
 
@@ -35,6 +36,9 @@ router.get("/products/:id", productController.getOneProduct);
 
 // get best seller products
 router.get("/best-seller", productController.getBestSellerProducts);
+
+// [PRICE REQUESTS]
+router.post("/price-requests", priceRequestsController.createPriceRequest);
 
 router.get("/", storeController.getStoreData);
 

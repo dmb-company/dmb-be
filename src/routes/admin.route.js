@@ -8,6 +8,7 @@ const articleController = require("../app/controllers/article.controller");
 const partnersController = require("../app/controllers/partners.controller");
 const productController = require("../app/controllers/products.controller");
 const productTagsController = require("../app/controllers/product-tags.controller");
+const priceRequestsController = require("../app/controllers/price-request.controller");
 const articleCategoryController = require("../app/controllers/article-categories.controller");
 const productCategoriesController = require("../app/controllers/product-categories.controller");
 
@@ -109,5 +110,22 @@ router.delete("/banners/:id", verifyToken, bannersController.deleteBanner);
 router.get("/partners", verifyToken, partnersController.getPartners);
 router.post("/partners", verifyToken, partnersController.createPartner);
 router.delete("/partners/:id", verifyToken, partnersController.deletePartner);
+
+// [PRICE REQUESTS]
+router.get(
+  "/price-requests",
+  verifyToken,
+  priceRequestsController.getAllPriceRequests
+);
+router.delete(
+  "/price-requests",
+  verifyToken,
+  priceRequestsController.deletePriceRequest
+);
+router.put(
+  "/price-requests",
+  verifyToken,
+  priceRequestsController.updatePriceRequestStatus
+);
 
 module.exports = router;
