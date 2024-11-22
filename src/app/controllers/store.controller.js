@@ -49,6 +49,8 @@ exports.updateStore = async (req, res) => {
       WHERE id = $${metadataValues.length + 2}
       RETURNING *`;
 
+    console.log(query);
+
     const values = [
       name,
       ...metadataValues, // Spread serialized metadata values for dynamic placeholders

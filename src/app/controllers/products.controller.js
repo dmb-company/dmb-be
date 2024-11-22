@@ -366,22 +366,21 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// [PATCH] /admin/product
 exports.updateProductFields = async (req, res) => {
   const { id: productId } = req.params;
-  const { tags, categories, ...updateFields } = req.body;
+  const { tags, categories, metadata, ...updateFields } = req.body;
 
   if (!productId) {
-    return res.status(400).json({
-      message: "Product ID is required!",
-    });
+    return res.status(400).json({ message: "Product ID is required!" });
   }
 
-  // Check if there are fields to update
-  if (Object.keys(updateFields).length === 0 && !tags && !categories) {
-    return res.status(400).json({
-      message: "No fields provided to update!",
-    });
+  if (
+    Object.keys(updateFields).length === 0 &&
+    !tags &&
+    !categories &&
+    !metadata
+  ) {
+    return res.status(400).json({ message: "No fields provided to update!" });
   }
 
   try {
@@ -389,38 +388,51 @@ exports.updateProductFields = async (req, res) => {
     const values = [];
     let index = 1;
 
-    // Dynamically build the SET clause for each field in the request
+    // Build SET clause for standard fields
     for (const [key, value] of Object.entries(updateFields)) {
-      if (key === "tagsId" || key === "categoriesId") continue; // Skip tags and categories for now
-
       setClauses.push(`${key} = $${index}`);
       values.push(value);
       index++;
     }
 
-    // Add the product ID as the last parameter
-    values.push(productId);
-
-    // Only proceed with an update if there are valid fields to update
-    if (setClauses.length > 0) {
-      await db.pool.query(
-        `UPDATE public.product SET ${setClauses.join(
-          ", "
-        )} WHERE id = $${index}`,
-        values
-      );
+    // Handle metadata updates
+    let metadataUpdate = null;
+    const metadataValues = [];
+    if (metadata) {
+      metadataUpdate = "COALESCE(metadata, '{}'::jsonb)";
+      Object.keys(metadata).forEach((key) => {
+        metadataUpdate = `jsonb_set(${metadataUpdate}, '{${key}}', $${index}, true)`;
+        metadataValues.push(JSON.stringify(metadata[key]));
+        index++;
+      });
     }
 
-    // Update tags if provided
+    // Construct the final query
+    const fullSetClause = [
+      ...setClauses,
+      metadataUpdate ? `metadata = ${metadataUpdate}` : null,
+    ]
+      .filter(Boolean) // Remove null or undefined
+      .join(", ");
+
+    if (fullSetClause) {
+      const query = `
+        UPDATE public.product
+        SET ${fullSetClause}
+        WHERE id = $${index};
+      `;
+      await db.pool.query(query, [...values, ...metadataValues, productId]);
+    }
+
+    // Update tags
     if (tags) {
       await db.pool.query(
-        `DELETE FROM public.product_tags WHERE product_id = $1;`,
+        `DELETE FROM public.product_tags WHERE product_id = $1`,
         [productId]
       );
       if (tags.length > 0) {
-        const tagsValues = tags.map((tag, i) => `($1, $${i + 2})`).join(", ");
+        const tagsValues = tags.map((_, i) => `($1, $${i + 2})`).join(", ");
         const tagsParams = [productId, ...tags.map((tag) => tag.id)];
-        console.log(tagsParams);
         await db.pool.query(
           `INSERT INTO public.product_tags (product_id, product_tag_id) VALUES ${tagsValues}`,
           tagsParams
@@ -428,15 +440,15 @@ exports.updateProductFields = async (req, res) => {
       }
     }
 
-    // Update categories if provided
+    // Update categories
     if (categories) {
       await db.pool.query(
-        `DELETE FROM public.product_category_product WHERE product_id = $1;`,
+        `DELETE FROM public.product_category_product WHERE product_id = $1`,
         [productId]
       );
       if (categories.length > 0) {
         const categoriesValues = categories
-          .map((categoryId, i) => `($1, $${i + 2})`)
+          .map((_, i) => `($1, $${i + 2})`)
           .join(", ");
         const categoriesParams = [
           productId,
@@ -454,12 +466,13 @@ exports.updateProductFields = async (req, res) => {
       data: {
         id: productId,
         ...updateFields,
+        tags: tags || [],
+        categories: categories || [],
+        metadata: metadata || {},
       },
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: "Update product failed!",
-    });
+    res.status(500).json({ message: "Update product failed!" });
   }
 };
