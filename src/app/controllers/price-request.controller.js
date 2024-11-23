@@ -47,11 +47,10 @@ exports.createPriceRequest = async (req, res) => {
 exports.getAllPriceRequests = async (req, res) => {
   try {
     const result = await db.pool.query(
-      `SELECT * FROM public.price_quote ORDER BY created_at DESC;`
+      `SELECT * FROM public.price_request ORDER BY created_at DESC;`
     );
     res.status(200).json({
-      message: "Fetched price requests successfully!",
-      data: result.rows,
+      requests: result.rows,
     });
   } catch (error) {
     console.error(error);
@@ -73,7 +72,7 @@ exports.updatePriceRequestStatus = async (req, res) => {
 
   try {
     const result = await db.pool.query(
-      `UPDATE public.price_quote SET status = $1, updated_at = now() WHERE id = $2 RETURNING *;`,
+      `UPDATE public.price_request SET status = $1, updated_at = now() WHERE id = $2 RETURNING *;`,
       [status, id]
     );
 
@@ -100,7 +99,7 @@ exports.deletePriceRequest = async (req, res) => {
 
   try {
     const result = await db.pool.query(
-      `DELETE FROM public.price_quote WHERE id = $1 RETURNING *;`,
+      `DELETE FROM public.price_request WHERE id = $1 RETURNING *;`,
       [id]
     );
 

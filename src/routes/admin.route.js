@@ -118,12 +118,12 @@ router.get(
   priceRequestsController.getAllPriceRequests
 );
 router.delete(
-  "/price-requests",
+  "/price-requests/:id",
   verifyToken,
   priceRequestsController.deletePriceRequest
 );
 router.put(
-  "/price-requests",
+  "/price-requests/:id",
   verifyToken,
   priceRequestsController.updatePriceRequestStatus
 );
